@@ -1,91 +1,147 @@
 'use client';
 
 import React, { useState } from 'react';
-// 召唤我们刚刚安装的排盘神器
-import { Solar } from 'lunar-javascript';
 
 export default function BaziPage() {
+    // 状态管理
     const [name, setName] = useState("");
-    const [gender, setGender] = useState("male");
-    const [birthTime, setBirthTime] = useState("");
+    const [gender, setGender] = useState("男");
+    const [calendarType, setCalendarType] = useState("公历");
+    const [birthTime, setBirthTime] = useState("1990-01-01T00:00");
+    const [location, setLocation] = useState("未知地 北京时间 --");
 
-    // 新增一个“小本子”，用来专门存算好的八字结果
-    const [baziResult, setBaziResult] = useState<string[]>([]);
-
-    const handleCalculate = () => {
-        if (!birthTime) {
-            alert("老板，您还没填出生时间呢！");
-            return;
-        }
-
-        // 1. 把前端的 HTML 时间字符串（比如 1988-04-21T00:00）拆解开
-        const dateObj = new Date(birthTime);
-        const year = dateObj.getFullYear();
-        const month = dateObj.getMonth() + 1;
-        const day = dateObj.getDate();
-        const hour = dateObj.getHours();
-        const minute = dateObj.getMinutes();
-
-        // 2. 将时间丢给排盘神器，让它精确处理历法和节气交接（立春）
-        const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
-        const lunar = solar.getLunar();
-        const baZi = lunar.getEightChar();
-
-        // 3. 拿到算好的四柱干支
-        const yearGanZhi = baZi.getYear();
-        const monthGanZhi = baZi.getMonth();
-        const dayGanZhi = baZi.getDay();
-        const hourGanZhi = baZi.getTime();
-
-        // 4. 把算出来的四个柱存进结果小本子里
-        setBaziResult([yearGanZhi, monthGanZhi, dayGanZhi, hourGanZhi]);
-    };
+    // 复选框状态
+    const [isDST, setIsDST] = useState(false);       // 夏令时
+    const [isTrueSolar, setIsTrueSolar] = useState(true); // 真太阳时
+    const [isSplitZi, setIsSplitZi] = useState(false); // 早晚子时
+    const [isSave, setIsSave] = useState(false);     // 保存开关
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center py-20 px-4 font-sans">
-            <h1 className="text-3xl font-bold text-slate-800 mb-8">八字排盘</h1>
+        <div className="min-h-screen bg-gray-50 flex justify-center py-12 px-4 font-sans text-sm">
 
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
-                <div className="mb-5">
-                    <label className="block text-sm text-slate-600 mb-2">姓名 (选填)</label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:border-slate-500" placeholder="请输入姓名" />
+            {/* 白色圆角卡片主体 */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 w-full max-w-xl">
+
+                {/* 1. 命主姓名 */}
+                <div className="flex items-center mb-6">
+                    <label className="w-20 text-gray-700 font-medium shrink-0">命主姓名</label>
+                    <input
+                        type="text"
+                        placeholder="请输入姓名"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-lg p-2.5 outline-none focus:border-amber-600 transition-colors placeholder:text-gray-300"
+                    />
                 </div>
 
-                <div className="mb-5">
-                    <label className="block text-sm text-slate-600 mb-2">性别</label>
-                    <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full border border-slate-300 rounded p-2 bg-white focus:outline-none focus:border-slate-500">
-                        <option value="male">男 (乾造)</option>
-                        <option value="female">女 (坤造)</option>
-                    </select>
+                {/* 2. 性别与历法选择 */}
+                <div className="flex items-center mb-6">
+                    <div className="w-20 shrink-0"></div> {/* 占位 */}
+
+                    {/* 性别单选 */}
+                    <div className="flex items-center gap-4 mr-8">
+                        <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                            <input
+                                type="radio"
+                                name="gender"
+                                checked={gender === "男"}
+                                onChange={() => setGender("男")}
+                                className="w-4 h-4 accent-[#a68b60]"
+                            /> 男
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                            <input
+                                type="radio"
+                                name="gender"
+                                checked={gender === "女"}
+                                onChange={() => setGender("女")}
+                                className="w-4 h-4 accent-[#a68b60]"
+                            /> 女
+                        </label>
+                    </div>
+
+                    {/* 历法切换按钮组 */}
+                    <div className="flex bg-gray-50 rounded-full border border-gray-100 overflow-hidden">
+                        {["公历", "农历", "四柱"].map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setCalendarType(type)}
+                                className={`px-5 py-1.5 text-sm transition-colors ${calendarType === type
+                                        ? "bg-[#a68b60] text-white"
+                                        : "text-gray-500 hover:text-gray-800"
+                                    }`}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="mb-8">
-                    <label className="block text-sm text-slate-600 mb-2">出生时间 (公历)</label>
-                    <input type="datetime-local" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:border-slate-500" />
+                {/* 3. 出生时间 */}
+                <div className="flex items-center mb-6">
+                    <label className="w-20 text-gray-700 font-medium shrink-0">出生时间</label>
+                    <input
+                        type="datetime-local"
+                        value={birthTime}
+                        onChange={(e) => setBirthTime(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-lg p-2.5 outline-none focus:border-amber-600 transition-colors text-gray-700"
+                    />
                 </div>
 
-                <button onClick={handleCalculate} className="w-full bg-slate-800 text-white rounded p-3 font-bold tracking-widest hover:bg-slate-700 transition-colors">
+                {/* 4. 出生地址 */}
+                <div className="flex items-center mb-6">
+                    <label className="w-20 text-gray-700 font-medium shrink-0">出生地址</label>
+                    <input
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-lg p-2.5 outline-none focus:border-amber-600 transition-colors text-gray-700"
+                    />
+                </div>
+
+                {/* 5. 选项复选框行 */}
+                <div className="flex items-center justify-between mb-6 pl-20">
+                    <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                            <input type="checkbox" checked={isDST} onChange={(e) => setIsDST(e.target.checked)} className="w-4 h-4 accent-[#a68b60]" />
+                            夏令时
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                            <input type="checkbox" checked={isTrueSolar} onChange={(e) => setIsTrueSolar(e.target.checked)} className="w-4 h-4 accent-[#a68b60]" />
+                            真太阳时
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                            <input type="checkbox" checked={isSplitZi} onChange={(e) => setIsSplitZi(e.target.checked)} className="w-4 h-4 accent-[#a68b60]" />
+                            早晚子时
+                        </label>
+                    </div>
+
+                    {/* 保存开关 */}
+                    <label className="flex items-center gap-2 cursor-pointer text-gray-700">
+                        <div className={`w-10 h-5 rounded-full relative transition-colors ${isSave ? 'bg-[#a68b60]' : 'bg-gray-200'}`} onClick={() => setIsSave(!isSave)}>
+                            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${isSave ? 'left-5' : 'left-1'}`}></div>
+                        </div>
+                        保存
+                    </label>
+                </div>
+
+                {/* 6. 信息展示文本 */}
+                <div className="pl-20 text-gray-500 mb-2">
+                    <span>真太阳时：1990-01-01 00:00</span>
+                    <span className="ml-6">地址经纬：北纬39.00 东经120.00</span>
+                </div>
+                <div className="pl-20 flex items-center gap-2 text-gray-500 mb-8">
+                    <span>案例分类</span>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded-full border-[3px] border-[#a68b60] bg-white"></div>
+                        <span>全部</span>
+                    </div>
+                </div>
+
+                {/* 7. 提交大按钮 */}
+                <button className="w-full bg-black text-[#f3d9a4] text-lg rounded-full py-4 font-bold tracking-[0.2em] hover:bg-gray-900 transition-colors shadow-lg shadow-gray-200">
                     开始排盘
                 </button>
-
-                {/* --- 这里是全新的魔法区域：展示计算结果 --- */}
-                {baziResult.length > 0 && (
-                    <div className="mt-8 pt-8 border-t border-slate-200">
-                        <h3 className="text-center text-slate-500 mb-4 tracking-widest">排盘结果</h3>
-                        <div className="flex justify-between items-center bg-slate-50 p-4 rounded border border-slate-100">
-                            {baziResult.map((ganzhi, index) => (
-                                <div key={index} className="flex flex-col items-center">
-                                    <span className="text-xs text-slate-400 mb-1">
-                                        {["年柱", "月柱", "日柱", "时柱"][index]}
-                                    </span>
-                                    {/* 把干支切开，天干在上面，地支在下面 */}
-                                    <span className="text-lg font-bold text-slate-800 leading-tight">{ganzhi.charAt(0)}</span>
-                                    <span className="text-lg font-bold text-slate-800 leading-tight">{ganzhi.charAt(1)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
 
             </div>
         </div>
